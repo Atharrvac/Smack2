@@ -3,20 +3,21 @@ import { GoogleGenAI, GenerateContentResponse, Part } from "@google/genai";
 import { GEMINI_CHAT_MODEL_NAME } from '../constants';
 import { Language } from '../types';
 
-// Ensure API_KEY is available. In a real browser app, this needs a secure way to be set,
-// often via a backend proxy or build-time environment variables.
-// For this project, we assume process.env.API_KEY is made available.
 const API_KEY = process.env.API_KEY;
 
+// Log warning but don't throw error - allow app to run without Gemini
 if (!API_KEY) {
-  console.error("API_KEY for Gemini is not set. Please set the environment variable.");
-  //throw new Error("API_KEY for Gemini is not set."); // Or handle gracefully in UI
+  console.warn("API_KEY for Gemini is not set. AI features will be disabled.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" }); // Provide a fallback if needed for init
+// Only initialize if API key is available
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 export const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
-  if (!API_KEY) return `Error: API Key not configured. Original: ${text}`;
+  if (!API_KEY || !ai) {
+    console.warn("Gemini API not available for translation");
+    return text; // Return original text if no API key
+  }
   
   try {
     const model = GEMINI_CHAT_MODEL_NAME;
@@ -49,7 +50,10 @@ export const translateText = async (text: string, targetLanguage: Language): Pro
 };
 
 export const getResponseWithGoogleSearch = async (promptText: string): Promise<{text: string, sources: any[]}> => {
-  if (!API_KEY) return {text: "Error: API Key not configured.", sources: []};
+  if (!API_KEY || !ai) {
+    console.warn("Gemini API not available for search");
+    return {text: "AI assistant is currently unavailable. Please configure the Gemini API key to enable AI features.", sources: []};
+  }
   
   try {
     const model = GEMINI_CHAT_MODEL_NAME;
@@ -83,8 +87,8 @@ export const getResponseWithGoogleSearch = async (promptText: string): Promise<{
 // Placeholder for future use, not actively used in this MVP's chat.
 // This shows how to get a JSON response specifically.
 export const getStructuredResponse = async <T,>(promptText: string, exampleJson: T): Promise<T | null> => {
-  if (!API_KEY) {
-    console.error("API Key not configured.");
+  if (!API_KEY || !ai) {
+    console.warn("Gemini API not available for structured response");
     return null;
   }
 

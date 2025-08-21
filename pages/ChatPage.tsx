@@ -197,13 +197,17 @@ const ChatPage: React.FC = () => {
           aiResponseText = searchResult.text;
           sources = searchResult.sources;
         } else {
-            const tempAi = new (await import('@google/genai')).GoogleGenAI({ apiKey: process.env.API_KEY || "MISSING_API_KEY" });
-            const response = await tempAi.models.generateContent({
-                model: GEMINI_CHAT_MODEL_NAME,
-                contents: { parts: [{text: currentInput }] },
-                config: { temperature: 0.7 }
-            });
-            aiResponseText = response.text;
+            if (!process.env.API_KEY) {
+              aiResponseText = "AI assistant is currently unavailable. Please configure the Gemini API key to enable AI features.";
+            } else {
+              const tempAi = new (await import('@google/genai')).GoogleGenAI({ apiKey: process.env.API_KEY });
+              const response = await tempAi.models.generateContent({
+                  model: GEMINI_CHAT_MODEL_NAME,
+                  contents: { parts: [{text: currentInput }] },
+                  config: { temperature: 0.7 }
+              });
+              aiResponseText = response.text;
+            }
         }
         
         const aiMessage: ChatMessage = {
